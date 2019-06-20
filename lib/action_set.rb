@@ -66,10 +66,15 @@ module ActionSet
 
     def filter_typecasted_value_for(keypath, value, set)
       instruction = ActiveSet::AttributeInstruction.new(keypath, value)
-      item_with_value = set.find { |i| !instruction.value_for(item: i).nil? }
-      item_value = instruction.value_for(item: item_with_value)
+      if set.is_a?(ActiveRecord::Relation)
+        klass = set.model.columns_hash.fetch(keypath, nil)&.type.class
+      else
+        item_with_value = set.find { |i| !instruction.value_for(item: i).nil? }
+        item_value = instruction.value_for(item: item_with_value)
+        klass = item_value.class
+      end
       ActionSet::AttributeValue.new(value)
-                               .cast(to: item_value.class)
+                               .cast(to: klass)
     end
 
     def paginate_instructions
