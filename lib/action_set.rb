@@ -66,13 +66,15 @@ module ActionSet
 
     def filter_typecasted_value_for(keypath, value, set)
       instruction = ActiveSet::AttributeInstruction.new(keypath, value)
-      if set.is_a?(ActiveRecord::Relation)
+      if set.is_a?(ActiveRecord::Relation) || set.view.is_a?(ActiveRecord::Relation)
         klass = set.model.columns_hash.fetch(keypath, nil)&.type.class
-      else
-        item_with_value = set.find { |i| !instruction.value_for(item: i).nil? }
-        item_value = instruction.value_for(item: item_with_value)
-        klass = item_value.class
+        return ActionSet::AttributeValue.new(value).cast(to: klass) unless klass == NilClass
       end
+
+      item_with_value = set.find { |i| !instruction.value_for(item: i).nil? }
+      item_value = instruction.value_for(item: item_with_value)
+      klass = item_value.class
+
       ActionSet::AttributeValue.new(value)
                                .cast(to: klass)
     end
